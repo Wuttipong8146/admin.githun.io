@@ -95,19 +95,25 @@
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // Check Firebase initialization
+        console.log('Firebase Initialized:', app);
+        console.log('Firestore Initialized:', db);
+
         // Function to add an employee
         function addEmployee() {
             const employeeId = document.getElementById('employeeId').value;
+            console.log("Adding employee with ID:", employeeId);  // Log for debugging
             if (employeeId) {
                 db.collection('users').doc(employeeId).set({
                     password: '0000',
                     userId: ''
                 }).then(() => {
+                    console.log('Employee added successfully');
                     alert('Employee added successfully');
                     loadEmployees(); // Reload the employee list
                     document.getElementById('employeeId').value = ''; // Clear input
                 }).catch((error) => {
-                    console.error('Error adding employee: ', error);
+                    console.error('Error adding employee:', error);
                 });
             } else {
                 alert('Please enter a valid Employee ID');
@@ -116,11 +122,13 @@
 
         // Function to load employees
         function loadEmployees() {
+            console.log('Loading employees...');
             db.collection('users').get().then((querySnapshot) => {
                 const tbody = document.querySelector('#employeeTable tbody');
                 tbody.innerHTML = ''; // Clear existing rows
                 querySnapshot.forEach((doc) => {
                     const employeeId = doc.id;
+                    console.log('Employee loaded:', employeeId); // Log loaded employees
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${employeeId}</td>
@@ -131,17 +139,20 @@
                     `;
                     tbody.appendChild(tr);
                 });
+            }).catch((error) => {
+                console.error('Error loading employees:', error);
             });
         }
 
         // Function to delete an employee
         function deleteEmployee(employeeId) {
             if (confirm(`Are you sure you want to delete ${employeeId}?`)) {
+                console.log('Deleting employee:', employeeId);
                 db.collection('users').doc(employeeId).delete().then(() => {
                     alert('Employee deleted successfully');
                     loadEmployees(); // Reload the employee list
                 }).catch((error) => {
-                    console.error('Error deleting employee: ', error);
+                    console.error('Error deleting employee:', error);
                 });
             }
         }
@@ -149,6 +160,7 @@
         // Function to reset password
         function resetPassword(employeeId) {
             if (confirm(`Are you sure you want to reset password for ${employeeId}?`)) {
+                console.log('Resetting password for employee:', employeeId);
                 db.collection('users').doc(employeeId).update({
                     password: '0000',
                     userId: ''
@@ -156,13 +168,16 @@
                     alert('Password reset successfully');
                     loadEmployees(); // Reload the employee list
                 }).catch((error) => {
-                    console.error('Error resetting password: ', error);
+                    console.error('Error resetting password:', error);
                 });
             }
         }
 
         // Load employees when page is ready
-        window.onload = loadEmployees;
+        window.onload = function() {
+            console.log('Page loaded, loading employees...');
+            loadEmployees();
+        };
     </script>
 </body>
 </html>
