@@ -167,7 +167,8 @@
                 db.collection('users').doc(employeeId).set({
                     password: '0000',
                     userId: '',
-                    status: 'inactive'
+                    status: 'inactive',
+                    employeeId: employeeId
                 }).then(() => {
                     alert('Employee added successfully');
                     loadEmployees(); // Reload the employee list
