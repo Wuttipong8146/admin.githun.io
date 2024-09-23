@@ -19,7 +19,7 @@
             color: #ff6f61;
             margin-top: 30px;
         }
-        div.container {
+        div.container, .login-container {
             max-width: 400px;
             margin: auto;
             padding: 20px;
@@ -27,14 +27,17 @@
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             border: 2px solid #ff6f61;
+            margin-top: 50px;
         }
         input {
             padding: 10px;
+            margin: 5px 0;
             border: 1px solid #ff6f61;
             border-radius: 8px;
             font-size: 16px;
             outline: none;
             transition: border-color 0.3s ease;
+            width: calc(100% - 24px);
         }
         input:focus {
             border-color: #ff3b30;
@@ -48,6 +51,8 @@
             font-size: 16px;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
         }
         button:hover {
             background-color: #ff3b30;
@@ -76,10 +81,17 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="login-container" id="loginContainer">
+        <h2>Admin Login</h2>
+        <input type="password" id="adminPassword" placeholder="Enter Admin Password">
+        <button id="loginBtn">Login</button>
+    </div>
+    
+    <div class="container" id="employeeContainer" style="display:none;">
         <h2>Manage Employees</h2>
         <input type="text" id="employeeId" placeholder="Enter Employee ID">
         <button id="addEmployeeBtn">Add Employee</button>
+        <input type="text" id="searchEmployee" placeholder="Search Employee">
         
         <table id="employeeTable">
             <thead>
@@ -109,9 +121,21 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Load employees when page is ready
-        window.onload = function() {
-            loadEmployees();
+        // Function to check admin password
+        document.getElementById('loginBtn').onclick = function() {
+            const adminPassword = document.getElementById('adminPassword').value;
+            db.collection('admin').doc('credentials').get().then((doc) => {
+                if (doc.exists && doc.data().password === adminPassword) {
+                    alert('Login successful');
+                    document.getElementById('loginContainer').style.display = 'none';
+                    document.getElementById('employeeContainer').style.display = 'block';
+                    loadEmployees(); // Load employees upon successful login
+                } else {
+                    alert('Invalid password');
+                }
+            }).catch((error) => {
+                console.error('Error verifying password:', error);
+            });
         };
 
         // Function to add an employee
@@ -134,21 +158,25 @@
         };
 
         // Function to load employees
-        function loadEmployees() {
+        function loadEmployees(searchQuery = '') {
             db.collection('users').get().then((querySnapshot) => {
                 const tbody = document.querySelector('#employeeTable tbody');
                 tbody.innerHTML = ''; // Clear existing rows
+
                 querySnapshot.forEach((doc) => {
                     const employeeId = doc.id;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${employeeId}</td>
-                        <td class="actions">
-                            <button onclick="deleteEmployee('${employeeId}')">Delete</button>
-                            <button class="reset" onclick="resetPassword('${employeeId}')">Reset Password</button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
+                    // If there's a search query, filter out non-matching employee IDs
+                    if (employeeId.toLowerCase().includes(searchQuery.toLowerCase())) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${employeeId}</td>
+                            <td class="actions">
+                                <button onclick="deleteEmployee('${employeeId}')">Delete</button>
+                                <button class="reset" onclick="resetPassword('${employeeId}')">Reset Password</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
                 });
             }).catch((error) => {
                 console.error('Error loading employees:', error);
@@ -181,6 +209,12 @@
                 });
             }
         }
+
+        // Add event listener for search input
+        document.getElementById('searchEmployee').addEventListener('input', function() {
+            const searchQuery = this.value;
+            loadEmployees(searchQuery);
+        });
     </script>
 </body>
 </html>
