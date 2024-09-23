@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users</title>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-firestore.js"></script>
+</head>
+<body>
+    <h2>Manage Employee Users</h2>
+
+    <!-- Add new user -->
+    <div>
+        <h3>Add New User</h3>
+        <input type="text" id="newEmployeeId" placeholder="Enter Employee ID">
+        <button onclick="addUser()">Add User</button>
+    </div>
+
+    <!-- Display users list -->
+    <div>
+        <h3>User List</h3>
+        <ul id="userList"></ul>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Add user with default password
+        async function addUser() {
+            const employeeId = document.getElementById('newEmployeeId').value;
+            if (employeeId) {
+                await db.collection('users').doc(employeeId).set({
+                    password: "0000",
+                    userId: ""
+                });
+                alert(`User ${employeeId} added with default password.`);
+                loadUsers();
+            }
+        }
+
+        // Load user list from Firestore
+        async function loadUsers() {
+            const userList = document.getElementById('userList');
+            userList.innerHTML = '';
+            const querySnapshot = await db.collection('users').get();
+            querySnapshot.forEach((doc) => {
+                const userId = doc.id;
+                userList.innerHTML += `<li>${userId} 
+                    <button onclick="deleteUser('${userId}')">Delete</button>
+                    <button onclick="resetPassword('${userId}')">Reset Password</button>
+                </li>`;
+            });
+        }
+
+        // Delete user
+        async function deleteUser(employeeId) {
+            await db.collection('users').doc(employeeId).delete();
+            alert(`User ${employeeId} deleted.`);
+            loadUsers();
+        }
+
+        // Reset password to default
+        async function resetPassword(employeeId) {
+            await db.collection('users').doc(employeeId).update({
+                password: "0000",
+                userId: ""
+            });
+            alert(`Password for ${employeeId} reset to default.`);
+            loadUsers();
+        }
+
+        // Load users on page load
+        window.onload = loadUsers;
+    </script>
+</body>
+</html>
