@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Employees</title>
-    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"></script>
     <style>
+        /* Styles as previously defined */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f9f9f9;
@@ -114,6 +115,7 @@
     </div>
 
     <script>
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBoKc95BbIYYGUKk1kyTdaVssnBUspTHaU",
             authDomain: "line-chatbot-9a9b0.firebaseapp.com",
@@ -122,6 +124,8 @@
             messagingSenderId: "345935467167",
             appId: "1:345935467167:web:bddb3747ee8d905e69c8aa"
         };
+
+        // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
