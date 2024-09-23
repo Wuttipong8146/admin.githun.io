@@ -3,84 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Manage Employees</title>
+    <title>Manage Employees</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f7f7f7;
-            margin: 0;
+            background-color: #f0f0f0;
             padding: 20px;
         }
         .container {
-            max-width: 600px;
-            margin: auto;
-            background: white;
+            background-color: white;
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        h2 {
+        h1 {
             text-align: center;
+            color: #333;
         }
-        .input-group {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-        }
-        .input-group input {
-            width: 70%;
+        input {
+            width: 100%;
             padding: 10px;
+            margin: 10px 0;
             border: 1px solid #ccc;
-            border-radius: 4px;
+            border-radius: 5px;
         }
-        .input-group button {
-            padding: 10px;
-            background-color: #28a745;
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 5px;
             cursor: pointer;
         }
-        .employee-list {
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 20px;
         }
-        .employee-item {
-            display: flex;
-            justify-content: space-between;
+        table, th, td {
+            border: 1px solid #ccc;
             padding: 10px;
-            border-bottom: 1px solid #ccc;
+            text-align: center;
         }
-        .employee-item button {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
+        th {
+            background-color: #f2f2f2;
         }
-        .employee-item button.reset {
-            background-color: #ffc107;
-            margin-right: 10px;
+        .actions button {
+            background-color: #f44336;
+            margin-left: 10px;
+        }
+        .actions button.reset {
+            background-color: #ff9800;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Manage Employees</h2>
-        <div class="input-group">
-            <input type="text" id="employeeId" placeholder="Enter Employee ID">
-            <button onclick="addEmployee()">Add Employee</button>
-        </div>
-        <div class="employee-list" id="employeeList">
-            <!-- รายชื่อพนักงานจะแสดงที่นี่ -->
-        </div>
+        <h1>Manage Employees</h1>
+        <input type="text" id="employeeId" placeholder="Enter Employee ID">
+        <button onclick="addEmployee()">Add Employee</button>
+        
+        <table id="employeeTable">
+            <thead>
+                <tr>
+                    <th>Employee ID</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Employees will be listed here -->
+            </tbody>
+        </table>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
-
     <script>
-        // TODO: ตั้งค่า Firebase config ของคุณ
+        // Firebase config
         const firebaseConfig = {
               apiKey: "AIzaSyBoKc95BbIYYGUKk1kyTdaVssnBUspTHaU",
               authDomain: "line-chatbot-9a9b0.firebaseapp.com",
@@ -89,65 +91,77 @@
               messagingSenderId: "345935467167",
               appId: "1:345935467167:web:bddb3747ee8d905e69c8aa"
         };
-
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // ฟังก์ชันเพิ่มพนักงาน
+        // Function to add an employee
         function addEmployee() {
             const employeeId = document.getElementById('employeeId').value;
-            if(employeeId) {
+            if (employeeId) {
                 db.collection('users').doc(employeeId).set({
                     password: '0000',
                     userId: ''
                 }).then(() => {
-                    alert(`Added employee: ${employeeId}`);
-                    loadEmployees();
-                }).catch(error => console.error("Error adding employee: ", error));
+                    alert('Employee added successfully');
+                    loadEmployees(); // Reload the employee list
+                    document.getElementById('employeeId').value = ''; // Clear input
+                }).catch((error) => {
+                    console.error('Error adding employee: ', error);
+                });
+            } else {
+                alert('Please enter a valid Employee ID');
             }
         }
 
-        // ฟังก์ชันโหลดรายชื่อพนักงาน
+        // Function to load employees
         function loadEmployees() {
-            const employeeList = document.getElementById('employeeList');
-            employeeList.innerHTML = '';
-
             db.collection('users').get().then((querySnapshot) => {
+                const tbody = document.querySelector('#employeeTable tbody');
+                tbody.innerHTML = ''; // Clear existing rows
                 querySnapshot.forEach((doc) => {
-                    const employee = doc.data();
-                    employeeList.innerHTML += `
-                        <div class="employee-item">
-                            <span>${doc.id}</span>
-                            <div>
-                                <button class="reset" onclick="resetPassword('${doc.id}')">Reset Password</button>
-                                <button onclick="deleteEmployee('${doc.id}')">Delete</button>
-                            </div>
-                        </div>`;
+                    const employeeId = doc.id;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${employeeId}</td>
+                        <td class="actions">
+                            <button onclick="deleteEmployee('${employeeId}')">Delete</button>
+                            <button class="reset" onclick="resetPassword('${employeeId}')">Reset Password</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
                 });
             });
         }
 
-        // ฟังก์ชันลบพนักงาน
+        // Function to delete an employee
         function deleteEmployee(employeeId) {
-            db.collection('users').doc(employeeId).delete().then(() => {
-                alert(`Deleted employee: ${employeeId}`);
-                loadEmployees();
-            }).catch(error => console.error("Error deleting employee: ", error));
+            if (confirm(`Are you sure you want to delete ${employeeId}?`)) {
+                db.collection('users').doc(employeeId).delete().then(() => {
+                    alert('Employee deleted successfully');
+                    loadEmployees(); // Reload the employee list
+                }).catch((error) => {
+                    console.error('Error deleting employee: ', error);
+                });
+            }
         }
 
-        // ฟังก์ชันรีเซ็ตรหัสผ่าน
+        // Function to reset password
         function resetPassword(employeeId) {
-            db.collection('users').doc(employeeId).update({
-                password: '0000',
-                userId: ''
-            }).then(() => {
-                alert(`Reset password for employee: ${employeeId}`);
-                loadEmployees();
-            }).catch(error => console.error("Error resetting password: ", error));
+            if (confirm(`Are you sure you want to reset password for ${employeeId}?`)) {
+                db.collection('users').doc(employeeId).update({
+                    password: '0000',
+                    userId: ''
+                }).then(() => {
+                    alert('Password reset successfully');
+                    loadEmployees(); // Reload the employee list
+                }).catch((error) => {
+                    console.error('Error resetting password: ', error);
+                });
+            }
         }
 
-        // เรียกใช้ฟังก์ชันโหลดรายชื่อพนักงานเมื่อเปิดหน้า
+        // Load employees when page is ready
         window.onload = loadEmployees;
     </script>
 </body>
