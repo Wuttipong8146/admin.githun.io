@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Employees</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js"></script>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -15,18 +15,33 @@
             margin: 0;
             padding: 0;
         }
-        h2 {
-            color: #ff6f61;
+        h3 {
             margin-top: 30px;
+            color: #ff6f61;
         }
-        div.container {
+        div {
             max-width: 400px;
             margin: auto;
             padding: 20px;
             background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             border: 2px solid #ff6f61;
+        }
+        h2 {
+            color: #ff6f61;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-align: left;
+            color: #ff6f61;
         }
         input {
             padding: 10px;
@@ -52,34 +67,38 @@
         button:hover {
             background-color: #ff3b30;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+        #reset-form {
+            display: none;
         }
-        table, th, td {
-            border: 1px solid #ccc;
-            padding: 10px;
+        #loader {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.8);
+            color: #ff6f61;
             text-align: center;
-        }
-        th {
-            background-color: #ff6f61;
-            color: white;
-        }
-        .actions button {
-            background-color: #f44336;
-            margin-left: 10px;
-        }
-        .actions button.reset {
-            background-color: #ff9800;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Manage Employees</h2>
+        <h1>Admin Access</h1>
+        <input type="password" id="adminPassword" placeholder="Enter Admin Password">
+        <button onclick="authenticateAdmin()">Enter</button>
+    </div>
+
+    <div class="container" id="adminPanel" style="display:none;">
+        <h1>Manage Employees</h1>
+        <input type="text" id="searchEmployeeId" placeholder="Search Employee ID" oninput="filterEmployees()">
         <input type="text" id="employeeId" placeholder="Enter Employee ID">
-        <button id="addEmployeeBtn">Add Employee</button>
+        <button onclick="addEmployee()">Add Employee</button>
         
         <table id="employeeTable">
             <thead>
@@ -95,7 +114,6 @@
     </div>
 
     <script>
-        // Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyBoKc95BbIYYGUKk1kyTdaVssnBUspTHaU",
             authDomain: "line-chatbot-9a9b0.firebaseapp.com",
@@ -104,18 +122,24 @@
             messagingSenderId: "345935467167",
             appId: "1:345935467167:web:bddb3747ee8d905e69c8aa"
         };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
+        const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Load employees when page is ready
-        window.onload = function() {
-            loadEmployees();
-        };
+        // Admin password
+        const ADMIN_PASSWORD = 'admin123'; // เปลี่ยนรหัสผ่านนี้ได้ตามต้องการ
 
-        // Function to add an employee
-        document.getElementById('addEmployeeBtn').onclick = function() {
+        function authenticateAdmin() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                document.querySelector('.container').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                loadEmployees(); // Load employees after authentication
+            } else {
+                alert('Incorrect password, please try again.');
+            }
+        }
+
+        function addEmployee() {
             const employeeId = document.getElementById('employeeId').value;
             if (employeeId) {
                 db.collection('users').doc(employeeId).set({
@@ -126,14 +150,13 @@
                     loadEmployees(); // Reload the employee list
                     document.getElementById('employeeId').value = ''; // Clear input
                 }).catch((error) => {
-                    console.error('Error adding employee:', error);
+                    console.error('Error adding employee: ', error);
                 });
             } else {
                 alert('Please enter a valid Employee ID');
             }
-        };
+        }
 
-        // Function to load employees
         function loadEmployees() {
             db.collection('users').get().then((querySnapshot) => {
                 const tbody = document.querySelector('#employeeTable tbody');
@@ -150,24 +173,29 @@
                     `;
                     tbody.appendChild(tr);
                 });
-            }).catch((error) => {
-                console.error('Error loading employees:', error);
             });
         }
 
-        // Function to delete an employee
+        function filterEmployees() {
+            const searchTerm = document.getElementById('searchEmployeeId').value.toLowerCase();
+            const rows = document.querySelectorAll('#employeeTable tbody tr');
+            rows.forEach(row => {
+                const employeeId = row.cells[0].textContent.toLowerCase();
+                row.style.display = employeeId.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
         function deleteEmployee(employeeId) {
             if (confirm(`Are you sure you want to delete ${employeeId}?`)) {
                 db.collection('users').doc(employeeId).delete().then(() => {
                     alert('Employee deleted successfully');
                     loadEmployees(); // Reload the employee list
                 }).catch((error) => {
-                    console.error('Error deleting employee:', error);
+                    console.error('Error deleting employee: ', error);
                 });
             }
         }
 
-        // Function to reset password
         function resetPassword(employeeId) {
             if (confirm(`Are you sure you want to reset password for ${employeeId}?`)) {
                 db.collection('users').doc(employeeId).update({
@@ -177,10 +205,14 @@
                     alert('Password reset successfully');
                     loadEmployees(); // Reload the employee list
                 }).catch((error) => {
-                    console.error('Error resetting password:', error);
+                    console.error('Error resetting password: ', error);
                 });
             }
         }
+
+        window.onload = () => {
+            // Initial load
+        };
     </script>
 </body>
 </html>
