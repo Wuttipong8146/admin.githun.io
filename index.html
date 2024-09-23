@@ -66,7 +66,7 @@
     <div class="container">
         <h1>Manage Employees</h1>
         <input type="text" id="employeeId" placeholder="Enter Employee ID">
-        <button onclick="addEmployee()">Add Employee</button>
+        <button id="addEmployeeBtn">Add Employee</button>
         
         <table id="employeeTable">
             <thead>
@@ -84,31 +84,31 @@
     <script>
         // Firebase config
         const firebaseConfig = {
-              apiKey: "AIzaSyBoKc95BbIYYGUKk1kyTdaVssnBUspTHaU",
-              authDomain: "line-chatbot-9a9b0.firebaseapp.com",
-              projectId: "line-chatbot-9a9b0",
-              storageBucket: "line-chatbot-9a9b0.appspot.com",
-              messagingSenderId: "345935467167",
-              appId: "1:345935467167:web:bddb3747ee8d905e69c8aa"
+            apiKey: "AIzaSyBoKc95BbIYYGUKk1kyTdaVssnBUspTHaU",
+            authDomain: "line-chatbot-9a9b0.firebaseapp.com",
+            projectId: "line-chatbot-9a9b0",
+            storageBucket: "line-chatbot-9a9b0.appspot.com",
+            messagingSenderId: "345935467167",
+            appId: "1:345935467167:web:bddb3747ee8d905e69c8aa"
         };
+
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Check Firebase initialization
-        console.log('Firebase Initialized:', app);
-        console.log('Firestore Initialized:', db);
+        // Load employees when page is ready
+        window.onload = function() {
+            loadEmployees();
+        };
 
         // Function to add an employee
-        function addEmployee() {
+        document.getElementById('addEmployeeBtn').onclick = function() {
             const employeeId = document.getElementById('employeeId').value;
-            console.log("Adding employee with ID:", employeeId);  // Log for debugging
             if (employeeId) {
                 db.collection('users').doc(employeeId).set({
                     password: '0000',
                     userId: ''
                 }).then(() => {
-                    console.log('Employee added successfully');
                     alert('Employee added successfully');
                     loadEmployees(); // Reload the employee list
                     document.getElementById('employeeId').value = ''; // Clear input
@@ -118,17 +118,15 @@
             } else {
                 alert('Please enter a valid Employee ID');
             }
-        }
+        };
 
         // Function to load employees
         function loadEmployees() {
-            console.log('Loading employees...');
             db.collection('users').get().then((querySnapshot) => {
                 const tbody = document.querySelector('#employeeTable tbody');
                 tbody.innerHTML = ''; // Clear existing rows
                 querySnapshot.forEach((doc) => {
                     const employeeId = doc.id;
-                    console.log('Employee loaded:', employeeId); // Log loaded employees
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${employeeId}</td>
@@ -147,7 +145,6 @@
         // Function to delete an employee
         function deleteEmployee(employeeId) {
             if (confirm(`Are you sure you want to delete ${employeeId}?`)) {
-                console.log('Deleting employee:', employeeId);
                 db.collection('users').doc(employeeId).delete().then(() => {
                     alert('Employee deleted successfully');
                     loadEmployees(); // Reload the employee list
@@ -160,7 +157,6 @@
         // Function to reset password
         function resetPassword(employeeId) {
             if (confirm(`Are you sure you want to reset password for ${employeeId}?`)) {
-                console.log('Resetting password for employee:', employeeId);
                 db.collection('users').doc(employeeId).update({
                     password: '0000',
                     userId: ''
@@ -172,12 +168,6 @@
                 });
             }
         }
-
-        // Load employees when page is ready
-        window.onload = function() {
-            console.log('Page loaded, loading employees...');
-            loadEmployees();
-        };
     </script>
 </body>
 </html>
