@@ -108,8 +108,8 @@
     
     <div class="container" id="employeeContainer" style="display:none;">
         <h2>Manage Employees</h2>
-        <input type="text" id="employeeId" placeholder="Enter Employee ID">
-        <button id="addEmployeeBtn">Add Employee</button>
+        <input type="text" id="employeeId" placeholder="Enter Employee IDs (comma-separated)">
+        <button id="addEmployeeBtn">Add Employees</button>
         <input type="text" id="searchEmployee" placeholder="Search Employee">
         
         <table id="employeeTable">
@@ -160,25 +160,32 @@
             });
         };
 
-        // Function to add an employee
+        // Function to add multiple employees
         document.getElementById('addEmployeeBtn').onclick = function() {
-            const employeeId = document.getElementById('employeeId').value;
-            if (employeeId) {
-                db.collection('users').doc(employeeId).set({
-                    password: '0000',
-                    userId: '',
-                    status: 'inactive',
-                    employeeId: employeeId
-                }).then(() => {
-                    alert('Employee added successfully');
-                    loadEmployees(); // Reload the employee list
-                    document.getElementById('employeeId').value = ''; // Clear input
-                }).catch((error) => {
-                    console.error('Error adding employee:', error);
-                });
-            } else {
-                alert('Please enter a valid Employee ID');
-            }
+            const employeeIds = document.getElementById('employeeId').value.split(',').map(id => id.trim());
+            const promises = [];
+
+            employeeIds.forEach(employeeId => {
+                if (employeeId) {
+                    // Create a promise for each employee to add to Firestore
+                    const promise = db.collection('users').doc(employeeId).set({
+                        password: '0000',
+                        userId: '',
+                        status: 'inactive',
+                        employeeId: employeeId
+                    });
+                    promises.push(promise);
+                }
+            });
+
+            // Wait for all promises to resolve
+            Promise.all(promises).then(() => {
+                alert('Employees added successfully');
+                loadEmployees(); // Reload the employee list
+                document.getElementById('employeeId').value = ''; // Clear input
+            }).catch((error) => {
+                console.error('Error adding employees:', error);
+            });
         };
 
         // Function to load employees
@@ -244,28 +251,28 @@
         function sortTable(columnIndex) {
             const tbody = document.querySelector('#employeeTable tbody');
             const rows = Array.from(tbody.rows);
-            
-            rows.sort((a, b) => {
-                const aText = a.cells[columnIndex].textContent.trim();
-                const bText = b.cells[columnIndex].textContent.trim();
 
-                if (columnIndex === 1) { // Status column
-                    return (aText === 'Active' ? 1 : 0) - (bText === 'Active' ? 1 : 0);
-                }
-                
-                return aText.localeCompare(bText, undefined, {numeric: true});
+            rows.sort((a, b) => {
+                const cellA = a.cells[columnIndex].innerText.toLowerCase();
+                const cellB = b.cells[columnIndex].innerText.toLowerCase();
+
+                if (cellA < cellB) return sortDirection ? -1 : 1;
+                if (cellA > cellB) return sortDirection ? 1 : -1;
+                return 0;
             });
 
-            // Reverse the order if already sorted
-            if (!sortDirection) {
-                rows.reverse();
-            }
-            sortDirection = !sortDirection;
-
-            // Clear the current rows and append the sorted ones
+            // Clear existing rows and append sorted rows
             tbody.innerHTML = '';
             rows.forEach(row => tbody.appendChild(row));
+
+            // Toggle sort direction for next click
+            sortDirection = !sortDirection;
         }
+
+        // Search functionality
+        document.getElementById('searchEmployee').addEventListener('input', function() {
+            loadEmployees(this.value); // Reload employees based on search query
+        });
     </script>
 </body>
 </html>
