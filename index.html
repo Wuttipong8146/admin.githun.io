@@ -61,6 +61,10 @@
         button:hover {
             background-color: #ff3b30;
         }
+        .error-message {
+            color: red;
+            display: none; /* ซ่อนข้อความผิดพลาดโดยเริ่มต้น */
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -106,6 +110,7 @@
         <input type="email" id="adminEmail" placeholder="Enter Admin Email">
         <input type="password" id="adminPassword" placeholder="Enter Admin Password">
         <button id="loginBtn">Login</button>
+        <p class="error-message" id="errorMessage">รหัสผ่านหรืออีเมลไม่ถูกต้อง</p> <!-- ข้อความผิดพลาด -->
     </div>
     
     <div class="container" id="employeeContainer" style="display:none;">
@@ -145,12 +150,14 @@
         const auth = firebase.auth();
 
         let sortDirection = true; // true for ascending, false for descending
+        let loginTimeout; // ตัวแปรสำหรับจัดการ timeout
 
         // ฟังก์ชันตรวจสอบการล็อกอิน
         document.getElementById('loginBtn').onclick = function() {
             const adminEmail = document.getElementById('adminEmail').value;
             const adminPassword = document.getElementById('adminPassword').value;
-            
+            const errorMessage = document.getElementById('errorMessage');
+
             // ใช้ Firebase Auth ในการล็อกอิน
             auth.signInWithEmailAndPassword(adminEmail, adminPassword)
                 .then((userCredential) => {
@@ -158,9 +165,19 @@
                     document.getElementById('loginContainer').style.display = 'none';
                     document.getElementById('employeeContainer').style.display = 'block';
                     loadEmployees(); // โหลดข้อมูลพนักงาน
+                    errorMessage.style.display = 'none'; // ซ่อนข้อความผิดพลาด
+
+                    // ตั้งเวลาให้ล็อกอินได้ 10 นาที
+                    if (loginTimeout) clearTimeout(loginTimeout); // ล้าง timeout เก่า
+                    loginTimeout = setTimeout(() => {
+                        auth.signOut(); // ออกจากระบบอัตโนมัติ
+                        alert('Session expired. Please log in again.');
+                        location.reload(); // รีเฟรชหน้าเพื่อให้กลับไปล็อกอิน
+                    }, 10 * 60 * 1000); // 10 นาที
                 })
                 .catch((error) => {
-                    alert('Login failed: ' + error.message);
+                    errorMessage.style.display = 'block'; // แสดงข้อความผิดพลาด
+                    console.error('Login failed: ', error.message);
                 });
         };
 
