@@ -7,7 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script> <!-- Firebase Auth -->
-    <style>
+<style>
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f9f9f9;
@@ -152,6 +152,31 @@
         let sortDirection = true; // true for ascending, false for descending
         let loginTimeout; // ตัวแปรสำหรับจัดการ timeout
 
+        // ฟังก์ชันตรวจสอบสถานะการล็อกอิน
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                // ถ้ามีผู้ใช้ล็อกอินอยู่
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('employeeContainer').style.display = 'block';
+                loadEmployees(); // โหลดข้อมูลพนักงาน
+                setLoginTimeout(); // ตั้งเวลาให้ล็อกอิน
+            } else {
+                // ถ้าไม่มีผู้ใช้ล็อกอิน
+                document.getElementById('loginContainer').style.display = 'block';
+                document.getElementById('employeeContainer').style.display = 'none';
+            }
+        });
+
+        // ฟังก์ชันตั้งเวลาให้ล็อกอิน
+        function setLoginTimeout() {
+            if (loginTimeout) clearTimeout(loginTimeout); // ล้าง timeout เก่า
+            loginTimeout = setTimeout(() => {
+                auth.signOut(); // ออกจากระบบอัตโนมัติ
+                alert('Session expired. Please log in again.');
+                location.reload(); // รีเฟรชหน้าเพื่อให้กลับไปล็อกอิน
+            }, 10 * 60 * 1000); // 10 นาที
+        }
+
         // ฟังก์ชันตรวจสอบการล็อกอิน
         document.getElementById('loginBtn').onclick = function() {
             const adminEmail = document.getElementById('adminEmail').value;
@@ -166,14 +191,7 @@
                     document.getElementById('employeeContainer').style.display = 'block';
                     loadEmployees(); // โหลดข้อมูลพนักงาน
                     errorMessage.style.display = 'none'; // ซ่อนข้อความผิดพลาด
-
-                    // ตั้งเวลาให้ล็อกอินได้ 10 นาที
-                    if (loginTimeout) clearTimeout(loginTimeout); // ล้าง timeout เก่า
-                    loginTimeout = setTimeout(() => {
-                        auth.signOut(); // ออกจากระบบอัตโนมัติ
-                        alert('Session expired. Please log in again.');
-                        location.reload(); // รีเฟรชหน้าเพื่อให้กลับไปล็อกอิน
-                    }, 10 * 60 * 1000); // 10 นาที
+                    setLoginTimeout(); // ตั้งเวลาให้ล็อกอิน
                 })
                 .catch((error) => {
                     errorMessage.style.display = 'block'; // แสดงข้อความผิดพลาด
