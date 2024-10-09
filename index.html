@@ -6,7 +6,7 @@
     <title>Manage Employees</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script> <!-- เพิ่ม Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script> <!-- Firebase Auth -->
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -103,6 +103,7 @@
 <body>
     <div class="login-container" id="loginContainer">
         <h2>Admin Login</h2>
+        <input type="email" id="adminEmail" placeholder="Enter Admin Email">
         <input type="password" id="adminPassword" placeholder="Enter Admin Password">
         <button id="loginBtn">Login</button>
     </div>
@@ -141,34 +142,36 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth();
 
         let sortDirection = true; // true for ascending, false for descending
 
-        // Function to check admin password
+        // ฟังก์ชันตรวจสอบการล็อกอิน
         document.getElementById('loginBtn').onclick = function() {
+            const adminEmail = document.getElementById('adminEmail').value;
             const adminPassword = document.getElementById('adminPassword').value;
-            db.collection('admin').doc('credentials').get().then((doc) => {
-                if (doc.exists && doc.data().password === adminPassword) {
+            
+            // ใช้ Firebase Auth ในการล็อกอิน
+            auth.signInWithEmailAndPassword(adminEmail, adminPassword)
+                .then((userCredential) => {
                     alert('Login successful');
                     document.getElementById('loginContainer').style.display = 'none';
                     document.getElementById('employeeContainer').style.display = 'block';
-                    loadEmployees(); // Load employees upon successful login
-                } else {
-                    alert('Invalid password');
-                }
-            }).catch((error) => {
-                console.error('Error verifying password:', error);
-            });
+                    loadEmployees(); // โหลดข้อมูลพนักงาน
+                })
+                .catch((error) => {
+                    alert('Login failed: ' + error.message);
+                });
         };
 
-        // Function to add multiple employees
+        // ฟังก์ชันเพิ่มพนักงาน
         document.getElementById('addEmployeeBtn').onclick = function() {
             const employeeIds = document.getElementById('employeeId').value.split(',').map(id => id.trim());
             const promises = [];
 
             employeeIds.forEach(employeeId => {
                 if (employeeId) {
-                    // Create a promise for each employee to add to Firestore
+                    // เพิ่มพนักงานใหม่ใน Firestore
                     const promise = db.collection('users').doc(employeeId).set({
                         password: '0000',
                         userId: '',
@@ -179,30 +182,29 @@
                 }
             });
 
-            // Wait for all promises to resolve
+            // รอให้เพิ่มพนักงานเสร็จทั้งหมด
             Promise.all(promises).then(() => {
                 alert('Employees added successfully');
-                loadEmployees(); // Reload the employee list
-                document.getElementById('employeeId').value = ''; // Clear input
+                loadEmployees(); // รีโหลดรายการพนักงาน
+                document.getElementById('employeeId').value = ''; // ล้าง input
             }).catch((error) => {
                 console.error('Error adding employees:', error);
             });
         };
 
-        // Function to load employees
+        // ฟังก์ชันโหลดพนักงาน
         function loadEmployees(searchQuery = '') {
             db.collection('users').get().then((querySnapshot) => {
                 const tbody = document.querySelector('#employeeTable tbody');
-                tbody.innerHTML = ''; // Clear existing rows
+                tbody.innerHTML = ''; // ล้างแถวที่มีอยู่
 
                 querySnapshot.forEach((doc) => {
                     const employeeId = doc.id;
                     const employeeData = doc.data();
-                    // Determine if the employee is active or inactive based on userId
                     const statusClass = employeeData.userId ? 'active' : 'inactive';
                     const statusText = employeeData.userId ? 'Active' : 'Inactive';
 
-                    // If there's a search query, filter out non-matching employee IDs
+                    // ถ้ามีการค้นหา จะกรองพนักงานที่ตรงกับคำค้นหา
                     if (employeeId.toLowerCase().includes(searchQuery.toLowerCase())) {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
@@ -221,34 +223,34 @@
             });
         }
 
-        // Function to delete an employee
+        // ฟังก์ชันลบพนักงาน
         function deleteEmployee(employeeId) {
             if (confirm(`Are you sure you want to delete ${employeeId}?`)) {
                 db.collection('users').doc(employeeId).delete().then(() => {
                     alert('Employee deleted successfully');
-                    loadEmployees(); // Reload the employee list
+                    loadEmployees(); // รีโหลดรายการพนักงาน
                 }).catch((error) => {
                     console.error('Error deleting employee:', error);
                 });
             }
         }
 
-        // Function to reset password
+        // ฟังก์ชันรีเซ็ตรหัสผ่าน
         function resetPassword(employeeId) {
             if (confirm(`Are you sure you want to reset password for ${employeeId}?`)) {
                 db.collection('users').doc(employeeId).update({
                     password: '0000',
-                    userId: '' // Clear the userId when resetting
+                    userId: '' // ล้าง userId เมื่อรีเซ็ตรหัสผ่าน
                 }).then(() => {
                     alert('Password reset successfully');
-                    loadEmployees(); // Reload the employee list
+                    loadEmployees(); // รีโหลดรายการพนักงาน
                 }).catch((error) => {
                     console.error('Error resetting password:', error);
                 });
             }
         }
 
-        // Function to sort the employee table
+        // ฟังก์ชันจัดเรียงตารางพนักงาน
         function sortTable(columnIndex) {
             const tbody = document.querySelector('#employeeTable tbody');
             const rows = Array.from(tbody.rows);
@@ -262,17 +264,15 @@
                 return 0;
             });
 
-            // Clear existing rows and append sorted rows
-            tbody.innerHTML = '';
+            tbody.innerHTML = ''; // ล้างแถวที่มีอยู่
             rows.forEach(row => tbody.appendChild(row));
 
-            // Toggle sort direction for next click
             sortDirection = !sortDirection;
         }
 
-        // Search functionality
+        // ฟังก์ชันค้นหาพนักงาน
         document.getElementById('searchEmployee').addEventListener('input', function() {
-            loadEmployees(this.value); // Reload employees based on search query
+            loadEmployees(this.value); // รีโหลดพนักงานตามคำค้นหา
         });
     </script>
 </body>
